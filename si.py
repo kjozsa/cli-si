@@ -1,31 +1,29 @@
 #!/usr/bin/env python3
-"""
-si - shell-intelligence helper.
-
-Usage:
-    si current date in iso format
-→ prints: date -I
-
-The idea: this script prints a shell command based on a natural-language prompt.
-Your shell (fish) can then insert that printed command into the current
-command line using `commandline --insert (si ...)`.
-"""
-
 import os
-import shlex
 import sys
 from typing import Optional
 
-import openai
 from loguru import logger
 from openai import OpenAI
 
+"""
+si - shell interpreter powered by LLMs
+
+This script translates natural language requests into shell commands using LLMs.
+It's designed to be used in shell pipelines where the output is executed as a command.
+
+Use it from fish like this: ~/.config/fish/functions/si.fish 
+```
+function si
+    set cmd (python /home/kjozsa/workspace/ai/cli-si/si.py $argv)
+    commandline --replace $cmd
+    commandline -f repaint
+end
+```
+"""
+
 
 def get_openai_client() -> Optional["OpenAI"]:
-    """
-    Create an OpenAI client configured for the OpenRouter endpoint.
-    Looks for OPENROUTER_API_KEY (preferred) or OPENAI_API_KEY in the environment.
-    """
     return OpenAI(
         base_url="https://openrouter.ai/api/v1",
         api_key=os.getenv("OPENROUTER_API_KEY") or os.getenv("OPENAI_API_KEY"),
@@ -33,10 +31,6 @@ def get_openai_client() -> Optional["OpenAI"]:
 
 
 def generate_command_llm(prompt: str) -> str:
-    """
-    Use an LLM to generate a single shell command.
-    Falls back to rule-based generation on any error.
-    """
     client = get_openai_client()
     logger.trace(f"LLM input prompt: {prompt!r}")
     system_prompt = (
@@ -46,6 +40,7 @@ def generate_command_llm(prompt: str) -> str:
         "- Output ONLY the command, no explanations.\n"
         "- Use standard Unix/Linux tools.\n"
         "- No markdown, no backticks, just plain text.\n"
+        "- Make sure to use `sudo` for commands that require root privileges.\n"
         "- If the request is ambiguous or unclear, return # ERROR: <reason>.\n"
     )
 
@@ -84,7 +79,6 @@ def main() -> None:
 
     prompt = " ".join(sys.argv[1:])
     cmd = generate_command_llm(prompt)
-    # IMPORTANT: stdout must be ONLY the command, so shells can consume it cleanly.
     print(cmd)
 
 
