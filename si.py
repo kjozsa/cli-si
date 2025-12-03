@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import os
 import sys
-from typing import Optional
 
 from loguru import logger
 from openai import OpenAI
@@ -23,15 +22,11 @@ end
 """
 
 
-def get_openai_client() -> Optional["OpenAI"]:
-    return OpenAI(
+def generate_command_llm(prompt: str) -> str:
+    client = OpenAI(
         base_url="https://openrouter.ai/api/v1",
         api_key=os.getenv("OPENROUTER_API_KEY") or os.getenv("OPENAI_API_KEY"),
     )
-
-
-def generate_command_llm(prompt: str) -> str:
-    client = get_openai_client()
     logger.trace(f"LLM input prompt: {prompt!r}")
     system_prompt = (
         "You are an expert Linux shell user. "
@@ -78,8 +73,7 @@ def main() -> None:
         sys.exit(1)
 
     prompt = " ".join(sys.argv[1:])
-    cmd = generate_command_llm(prompt)
-    print(cmd)
+    print(generate_command_llm(prompt))
 
 
 if __name__ == "__main__":
