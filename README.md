@@ -11,3 +11,9 @@ function si
     commandline -f repaint
 end
 ```
+
+Example usage:
+```
+~ $ si last 5 files in this dir using `eza`
+~ $ eza -l -n 5  # pushed to the prompt by `si`
+```
